@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
 
-const resend = new Resend('const resend = new Resend('re_Ggx3r7kM_HdTwR59gnmujMpJkVFj3ybZp');
+const resend = new Resend('re_Ggx3r7kM_HdTwR59gnmujMpJkVFj3ybZp');
     
 export default async function handler(req, res) {
   // Enable CORS
