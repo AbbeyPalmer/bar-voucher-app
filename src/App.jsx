@@ -53,19 +53,17 @@ const VoucherApp = () => {
     setLoading(false);
   };
 
-  const handleAdminLogin = () => {
+  const handleAdminLogin = (pwd) => {
     if (password === ADMIN_PASSWORD) {
       setIsAdminAuth(true);
-      setPassword('');
     } else {
       alert('Incorrect password');
     }
   };
 
-  const handleStaffLogin = () => {
+  const handleStaffLogin = (pwd) => {
     if (password === STAFF_PASSWORD) {
       setIsStaffAuth(true);
-      setPassword('');
     } else {
       alert('Incorrect password');
     }
