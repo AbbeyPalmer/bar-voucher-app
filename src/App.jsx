@@ -213,8 +213,11 @@ const LoginScreen = ({ onLogin, title }) => {
         await supabase.from('vouchers').delete().eq('id', voucher.id);
       }
       
-      await loadData();
-      searchVouchers();
+      // Update local state instead of reloading
+      setFoundVouchers(foundVouchers.filter(v => v.active));
+      const updatedVouchers = vouchers.filter(v => v.active);
+      setVouchers(updatedVouchers);
+      
       alert('Deleted ' + inactiveVouchers.length + ' inactive vouchers');
     };
 
