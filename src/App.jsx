@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { QrCode, Scan, Mail, Plus, Trash2, Check, X, Send, Power, RefreshCw, Search, LogOut, Lock } from 'lucide-react';
 
 const supabase = createClient(
-  'https://knrldnqwvacebcfjeqsx.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtucmxkbnF3dmFjZWJjZmplcXN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NzYwMTYsImV4cCI6MjA4MTM1MjAxNn0.a3y5PtLS3_EQuUn5ZkVixAUj1EXMkzEuLgotOC-jgsg'
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY'
 );
 
 const VoucherApp = () => {
@@ -23,6 +23,14 @@ const VoucherApp = () => {
 
   useEffect(() => {
     loadData();
+    
+    // Check for email in URL parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    if (emailParam) {
+      // Auto-switch to customer view if email in URL
+      setView('customer');
+    }
   }, []);
 
   const loadData = async () => {
@@ -72,6 +80,12 @@ const VoucherApp = () => {
 
   const LoginScreen = ({ onLogin, title }) => {
     const [showPassword, setShowPassword] = useState(false);
+    const [localPassword, setLocalPassword] = useState('');
+    
+    const handleLogin = () => {
+      setPassword(localPassword);
+      onLogin();
+    };
     
     return (
       <div className="max-w-md mx-auto p-6 mt-20">
@@ -84,22 +98,30 @@ const VoucherApp = () => {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Enter password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && onLogin()}
+              value={localPassword}
+              onChange={(e) => setLocalPassword(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  setPassword(localPassword);
+                  onLogin();
+                }
+              }}
               autoFocus
               className="w-full p-3 border rounded pr-12"
             />
             <button
               type="button"
-              onClick={() => setShowPassword(!showPassword)}
+              onClick={(e) => {
+                e.preventDefault();
+                setShowPassword(!showPassword);
+              }}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
             >
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
           <button
-            onClick={onLogin}
+            onClick={handleLogin}
             className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
           >
             Login
@@ -424,8 +446,19 @@ const VoucherApp = () => {
     const [shareEmail, setShareEmail] = useState('');
     const [sharingVoucher, setSharingVoucher] = useState(null);
 
-    const lookupVouchers = async () => {
-      if (!email.trim()) {
+    useEffect(() => {
+      // Pre-fill email from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const emailParam = urlParams.get('email');
+      if (emailParam) {
+        setEmail(emailParam);
+        // Auto-lookup vouchers
+        lookupVouchersWithEmail(emailParam);
+      }
+    }, []);
+
+    const lookupVouchersWithEmail = async (emailToLookup) => {
+      if (!emailToLookup.trim()) {
         alert('Please enter your email');
         return;
       }
@@ -433,7 +466,7 @@ const VoucherApp = () => {
       const { data } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('email', email.toLowerCase().trim())
+        .eq('email', emailToLookup.toLowerCase().trim())
         .eq('active', true);
       
       setCustomerVouchers(data || []);
@@ -442,6 +475,8 @@ const VoucherApp = () => {
         alert('No vouchers found for this email');
       }
     };
+
+    const lookupVouchers = () => lookupVouchersWithEmail(email);
 
     const shareVoucher = async (voucher) => {
       if (!shareEmail.trim()) {
@@ -505,7 +540,45 @@ const VoucherApp = () => {
               <div className="flex justify-center my-4 bg-gray-100 p-4 rounded">
                 <div className="text-center">
                   <QrCode size={120} className="mx-auto mb-2" />
-                  <p className="text-xs text-gray-600 font-mono break-all">{voucher.id}</p>
+                  <p className="text-xs text-gray-600 font-mono break-all mb-3">{voucher.id}</p>
+                  <button
+                    onClick={() => {
+                      // Create a canvas to generate QR code
+                      const canvas = document.createElement('canvas');
+                      const size = 400;
+                      canvas.width = size;
+                      canvas.height = size;
+                      const ctx = canvas.getContext('2d');
+                      
+                      // White background
+                      ctx.fillStyle = 'white';
+                      ctx.fillRect(0, 0, size, size);
+                      
+                      // Simple QR-like pattern (just visual - you'd use a real QR library for production)
+                      ctx.fillStyle = 'black';
+                      ctx.font = 'bold 16px monospace';
+                      ctx.textAlign = 'center';
+                      ctx.fillText('VOUCHER CODE:', size/2, 30);
+                      ctx.font = '12px monospace';
+                      const lines = voucher.id.match(/.{1,30}/g) || [];
+                      lines.forEach((line, i) => {
+                        ctx.fillText(line, size/2, 60 + (i * 20));
+                      });
+                      
+                      // Download
+                      canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'voucher-' + voucher.event_name.replace(/\s+/g, '-') + '.png';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                      });
+                    }}
+                    className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 text-sm"
+                  >
+                    Download QR Code
+                  </button>
                 </div>
               </div>
               
