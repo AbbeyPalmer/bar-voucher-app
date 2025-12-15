@@ -1,20 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { QrCode, Scan, Mail, Plus, Trash2, Check, X, Send, Power, RefreshCw, Search } from 'lucide-react';
+import { QrCode, Scan, Mail, Plus, Trash2, Check, X, Send, Power, RefreshCw, Search, LogOut, Lock } from 'lucide-react';
 
-// Initialize Supabase client
 const supabase = createClient(
-  'https://knrldnqwvacebcfjeqsx.supabase.co', // Replace with your Supabase URL
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtucmxkbnF3dmFjZWJjZmplcXN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NzYwMTYsImV4cCI6MjA4MTM1MjAxNn0.a3y5PtLS3_EQuUn5ZkVixAUj1EXMkzEuLgotOC-jgsg' // Replace with your anon key
+  'https://knrldnqwvacebcfjeqsx.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtucmxkbnF3dmFjZWJjZmplcXN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NzYwMTYsImV4cCI6MjA4MTM1MjAxNn0.a3y5PtLS3_EQuUn5ZkVixAUj1EXMkzEuLgotOC-jgsg'
 );
 
 const VoucherApp = () => {
-  const [view, setView] = useState('admin');
+  const [view, setView] = useState('customer');
   const [events, setEvents] = useState([]);
   const [vouchers, setVouchers] = useState([]);
   const [scannedCode, setScannedCode] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isAdminAuth, setIsAdminAuth] = useState(false);
+  const [isStaffAuth, setIsStaffAuth] = useState(false);
+  const [password, setPassword] = useState('');
+
+  const ADMIN_PASSWORD = 'admin123';
+  const STAFF_PASSWORD = 'staff123';
 
   useEffect(() => {
     loadData();
@@ -41,11 +46,67 @@ const VoucherApp = () => {
     setLoading(false);
   };
 
+  const handleAdminLogin = () => {
+    if (password === ADMIN_PASSWORD) {
+      setIsAdminAuth(true);
+      setPassword('');
+    } else {
+      alert('Incorrect password');
+    }
+  };
+
+  const handleStaffLogin = () => {
+    if (password === STAFF_PASSWORD) {
+      setIsStaffAuth(true);
+      setPassword('');
+    } else {
+      alert('Incorrect password');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdminAuth(false);
+    setIsStaffAuth(false);
+    setView('customer');
+  };
+
+  const LoginScreen = ({ onLogin, title }) => (
+    <div className="max-w-md mx-auto p-6 mt-20">
+      <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="text-center mb-6">
+          <Lock size={48} className="mx-auto mb-4 text-blue-600" />
+          <h2 className="text-2xl font-bold">{title}</h2>
+        </div>
+        <input
+          type="password"
+          placeholder="Enter password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          onKeyPress={(e) => e.key === 'Enter' && onLogin()}
+          className="w-full p-3 border rounded mb-4"
+        />
+        <button
+          onClick={onLogin}
+          className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
+        >
+          Login
+        </button>
+        <button
+          onClick={() => setView('customer')}
+          className="w-full mt-2 text-gray-600 hover:text-gray-800"
+        >
+          Back to Customer View
+        </button>
+      </div>
+    </div>
+  );
+
   const AdminView = () => {
     const [newEvent, setNewEvent] = useState({ name: '', drinks: 2, date: '' });
     const [recipients, setRecipients] = useState('');
     const [searchEmail, setSearchEmail] = useState('');
     const [foundVouchers, setFoundVouchers] = useState([]);
+    const [showSearch, setShowSearch] = useState(true);
 
     const createEvent = async () => {
       if (!newEvent.name || !newEvent.drinks || !newEvent.date) return;
@@ -72,11 +133,16 @@ const VoucherApp = () => {
       const emails = recipients.split('\n').filter(e => e.trim());
       const event = events.find(e => e.id === eventId);
       
+      if (!emails.length) {
+        alert('Please enter at least one email address');
+        return;
+      }
+      
       const newVouchers = emails.map(email => ({
         id: eventId + '-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
         event_id: eventId,
         event_name: event.name,
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         total_drinks: event.drinks,
         remaining: event.drinks,
         used: [],
@@ -90,23 +156,23 @@ const VoucherApp = () => {
         return;
       }
 
-      // Send emails via your backend API
       try {
         await fetch('/api/send-vouchers', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ vouchers: newVouchers })
         });
+        alert('Generated and emailed ' + newVouchers.length + ' vouchers!');
       } catch (e) {
-        console.log('Email sending not configured yet');
+        alert('Vouchers created but email not configured. Generated ' + newVouchers.length + ' vouchers.');
       }
 
       await loadData();
       setRecipients('');
-      alert('Generated ' + newVouchers.length + ' vouchers!');
     };
 
     const deleteEvent = async (eventId) => {
+      if (!confirm('Delete this event and all its vouchers?')) return;
       const { error } = await supabase.from('events').delete().eq('id', eventId);
       if (!error) await loadData();
     };
@@ -150,7 +216,6 @@ const VoucherApp = () => {
         replacement_for: oldVoucher.id
       };
 
-      // Deactivate old voucher and create new one
       await supabase.from('vouchers').update({ 
         active: false, 
         replaced_by: newVoucher.id 
@@ -178,7 +243,22 @@ const VoucherApp = () => {
 
     return (
       <div className="max-w-4xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Event Management</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Event Management</h1>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            <LogOut size={20} />
+            Logout
+          </button>
+        </div>
+
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+          <p className="text-sm text-yellow-800">
+            <strong>Note:</strong> Change passwords in the code! Current defaults are 'admin123' and 'staff123'
+          </p>
+        </div>
         
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Create New Event</h2>
@@ -222,6 +302,7 @@ const VoucherApp = () => {
               placeholder="Search by email"
               value={searchEmail}
               onChange={(e) => setSearchEmail(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchVouchers()}
               className="flex-1 p-2 border rounded"
             />
             <button
@@ -240,7 +321,7 @@ const VoucherApp = () => {
                     <div>
                       <h4 className="font-semibold">{voucher.event_name}</h4>
                       <p className="text-sm text-gray-600">{voucher.email}</p>
-                      <p className="text-xs text-gray-500 font-mono">{voucher.id}</p>
+                      <p className="text-xs text-gray-500 font-mono break-all">{voucher.id}</p>
                       <p className="text-sm mt-1">
                         {voucher.remaining} of {voucher.total_drinks} drinks remaining
                       </p>
@@ -276,9 +357,13 @@ const VoucherApp = () => {
               ))}
             </div>
           )}
+          {searchEmail && foundVouchers.length === 0 && (
+            <p className="text-gray-500 text-center py-4">No vouchers found for this email</p>
+          )}
         </div>
 
         <div className="space-y-4">
+          <h2 className="text-2xl font-semibold text-gray-800">Events</h2>
           {events.map(event => (
             <div key={event.id} className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-start mb-4">
@@ -326,13 +411,22 @@ const VoucherApp = () => {
     const [sharingVoucher, setSharingVoucher] = useState(null);
 
     const lookupVouchers = async () => {
+      if (!email.trim()) {
+        alert('Please enter your email');
+        return;
+      }
+      
       const { data } = await supabase
         .from('vouchers')
         .select('*')
-        .eq('email', email.toLowerCase())
+        .eq('email', email.toLowerCase().trim())
         .eq('active', true);
       
       setCustomerVouchers(data || []);
+      
+      if (!data || data.length === 0) {
+        alert('No vouchers found for this email');
+      }
     };
 
     const shareVoucher = async (voucher) => {
@@ -371,6 +465,7 @@ const VoucherApp = () => {
             placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && lookupVouchers()}
             className="w-full p-2 border rounded mb-4"
           />
           <button
@@ -462,6 +557,11 @@ const VoucherApp = () => {
     const redeemVoucher = async () => {
       setScanResult(null);
       
+      if (!scannedCode.trim()) {
+        setScanResult({ success: false, message: 'Please enter a voucher ID' });
+        return;
+      }
+      
       const { data: voucher } = await supabase
         .from('vouchers')
         .select('*')
@@ -511,7 +611,16 @@ const VoucherApp = () => {
 
     return (
       <div className="max-w-2xl mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800">Scan Voucher</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-800">Scan Voucher</h1>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700"
+          >
+            <LogOut size={20} />
+            Logout
+          </button>
+        </div>
         
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="text-center mb-6">
@@ -524,6 +633,7 @@ const VoucherApp = () => {
             placeholder="Voucher ID"
             value={scannedCode}
             onChange={(e) => setScannedCode(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && redeemVoucher()}
             className="w-full p-3 border-2 rounded mb-4 font-mono"
           />
           
@@ -564,30 +674,67 @@ const VoucherApp = () => {
     );
   };
 
+  if (view === 'admin' && !isAdminAuth) {
+    return <LoginScreen onLogin={handleAdminLogin} title="Admin Login" />;
+  }
+
+  if (view === 'scanner' && !isStaffAuth) {
+    return <LoginScreen onLogin={handleStaffLogin} title="Staff Login" />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <nav className="bg-gray-800 text-white p-4">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <h1 className="text-xl font-bold">Bar Voucher System</h1>
           <div className="space-x-2">
-            <button
-              onClick={() => setView('admin')}
-              className={view === 'admin' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
-            >
-              Admin
-            </button>
-            <button
-              onClick={() => setView('customer')}
-              className={view === 'customer' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
-            >
-              Customer
-            </button>
-            <button
-              onClick={() => setView('scanner')}
-              className={view === 'scanner' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
-            >
-              Scanner
-            </button>
+            {(isAdminAuth || isStaffAuth) ? (
+              <>
+                {isAdminAuth && (
+                  <button
+                    onClick={() => setView('admin')}
+                    className={view === 'admin' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
+                  >
+                    Admin
+                  </button>
+                )}
+                <button
+                  onClick={() => setView('customer')}
+                  className={view === 'customer' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
+                >
+                  Customer
+                </button>
+                {isStaffAuth && (
+                  <button
+                    onClick={() => setView('scanner')}
+                    className={view === 'scanner' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
+                  >
+                    Scanner
+                  </button>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setView('admin')}
+                  className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+                >
+                  Admin
+                </button>
+                <button
+                  onClick={() => setView('customer')}
+                  className={view === 'customer' ? 'px-4 py-2 rounded bg-blue-600' : 'px-4 py-2 rounded bg-gray-700'}
+                >
+                  Customer
+                </button>
+                <button
+                  onClick={() => setView('scanner')}
+                  className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+                >
+                  Scanner
+                </button>
+              </>
+            )}
           </div>
         </div>
       </nav>
