@@ -35,6 +35,7 @@ export default async function handler(req, res) {
         from: 'onboarding@resend.dev',
         to: voucher.email,
         subject: `Your ${voucher.event_name} Drink Vouchers`,
+        tags: [{ name: 'category', value: 'vouchers' }],
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #333;">Your Drink Vouchers</h1>
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
             <p><strong>To use your vouchers:</strong></p>
             <ol>
               <li>Show this QR code to the bartender</li>
-              <li>Or <a href="${voucherUrl}">click here</a> to view on your phone</li>
+              <li>Or visit: ${voucherUrl.replace('https://', '')} (copy and paste this link)</li>
               <li>Each scan redeems one drink</li>
             </ol>
           </div>
