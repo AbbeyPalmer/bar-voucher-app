@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { QrCode, Scan, Mail, Plus, Trash2, Check, X, Send, Power, RefreshCw, Search, LogOut, Lock } from 'lucide-react';
 
 const supabase = createClient(
-  'YOUR_SUPABASE_URL',
-  'YOUR_SUPABASE_ANON_KEY'
+  'https://knrldnqwvacebcfjeqsx.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtucmxkbnF3dmFjZWJjZmplcXN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NzYwMTYsImV4cCI6MjA4MTM1MjAxNn0.a3y5PtLS3_EQuUn5ZkVixAUj1EXMkzEuLgotOC-jgsg'
 );
 
 const VoucherApp = () => {
