@@ -70,36 +70,50 @@ const VoucherApp = () => {
     setView('customer');
   };
 
-  const LoginScreen = ({ onLogin, title }) => (
-    <div className="max-w-md mx-auto p-6 mt-20">
-      <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="text-center mb-6">
-          <Lock size={48} className="mx-auto mb-4 text-blue-600" />
-          <h2 className="text-2xl font-bold">{title}</h2>
+  const LoginScreen = ({ onLogin, title }) => {
+    const [showPassword, setShowPassword] = useState(false);
+    
+    return (
+      <div className="max-w-md mx-auto p-6 mt-20">
+        <div className="bg-white rounded-lg shadow-md p-8">
+          <div className="text-center mb-6">
+            <Lock size={48} className="mx-auto mb-4 text-blue-600" />
+            <h2 className="text-2xl font-bold">{title}</h2>
+          </div>
+          <div className="relative mb-4">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && onLogin()}
+              autoFocus
+              className="w-full p-3 border rounded pr-12"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? 'Hide' : 'Show'}
+            </button>
+          </div>
+          <button
+            onClick={onLogin}
+            className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
+          >
+            Login
+          </button>
+          <button
+            onClick={() => setView('customer')}
+            className="w-full mt-2 text-gray-600 hover:text-gray-800"
+          >
+            Back to Customer View
+          </button>
         </div>
-        <input
-          type="password"
-          placeholder="Enter password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && onLogin()}
-          className="w-full p-3 border rounded mb-4"
-        />
-        <button
-          onClick={onLogin}
-          className="w-full bg-blue-600 text-white py-3 rounded hover:bg-blue-700"
-        >
-          Login
-        </button>
-        <button
-          onClick={() => setView('customer')}
-          className="w-full mt-2 text-gray-600 hover:text-gray-800"
-        >
-          Back to Customer View
-        </button>
       </div>
-    </div>
-  );
+    );
+  };
 
   const AdminView = () => {
     const [newEvent, setNewEvent] = useState({ name: '', drinks: 2, date: '' });
