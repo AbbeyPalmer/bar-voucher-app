@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { QrCode, Scan, Mail, Plus, Trash2, Check, X, Send, Power, RefreshCw, Search, LogOut, Lock } from 'lucide-react';
 
 const supabase = createClient(
-  'https://knrldnqwvacebcfjeqsx.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtucmxkbnF3dmFjZWJjZmplcXN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU3NzYwMTYsImV4cCI6MjA4MTM1MjAxNn0.a3y5PtLS3_EQuUn5ZkVixAUj1EXMkzEuLgotOC-jgsg'
+  'YOUR_SUPABASE_URL',
+  'YOUR_SUPABASE_ANON_KEY'
 );
 
 const VoucherApp = () => {
@@ -96,7 +96,23 @@ const VoucherApp = () => {
       }
       
       await loadData();
+      searchVouchers();
       alert('Deleted ' + inactiveVouchers.length + ' inactive vouchers');
+    };
+
+    const deleteVoucher = async (voucherId) => {
+      if (!confirm('Delete this voucher? This cannot be undone.')) return;
+      
+      const { error } = await supabase.from('vouchers').delete().eq('id', voucherId);
+      
+      if (error) {
+        alert('Error deleting voucher: ' + error.message);
+        return;
+      }
+      
+      await loadData();
+      searchVouchers();
+      alert('Voucher deleted');
     };
 
     return (
