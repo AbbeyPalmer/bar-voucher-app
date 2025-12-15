@@ -16,7 +16,6 @@ const VoucherApp = () => {
   const [loading, setLoading] = useState(false);
   const [isAdminAuth, setIsAdminAuth] = useState(false);
   const [isStaffAuth, setIsStaffAuth] = useState(false);
-  const [password, setPassword] = useState('');
 
   const ADMIN_PASSWORD = 'admin123';
   const STAFF_PASSWORD = 'staff123';
@@ -305,17 +304,17 @@ const VoucherApp = () => {
       alert('New voucher created and sent! ID: ' + newVoucher.id);
     };
 
-   const deleteInactiveVouchers = async () => {
-      if (!confirm('Delete all inactive vouchers? This cannot be undone.')) return;
-      
-      const inactiveVouchers = vouchers.filter(v => !v.active);
-      
-      for (const voucher of inactiveVouchers) {
-        await supabase.from('vouchers').delete().eq('id', voucher.id);
+    const resendVoucher = async (voucher) => {
+      try {
+        await fetch('/api/send-vouchers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vouchers: [voucher] })
+        });
+        alert('Voucher resent to ' + voucher.email);
+      } catch (e) {
+        alert('Email sending not configured. Voucher ID: ' + voucher.id);
       }
-      
-      await loadData();
-      alert('Deleted ' + inactiveVouchers.length + ' inactive vouchers');
     };
 
     return (
