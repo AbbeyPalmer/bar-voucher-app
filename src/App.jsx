@@ -228,8 +228,13 @@ const LoginScreen = ({ onLogin, title }) => {
         return;
       }
       
-      await loadData();
-      searchVouchers();
+       // Remove from local state instead of reloading everything
+      setFoundVouchers(foundVouchers.filter(v => v.id !== voucherId));
+      
+      // Update main vouchers list in background
+      const updatedVouchers = vouchers.filter(v => v.id !== voucherId);
+      setVouchers(updatedVouchers);
+      
       alert('Voucher deleted');
     };
 
