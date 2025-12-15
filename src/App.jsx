@@ -855,7 +855,21 @@ const VoucherApp = () => {
       <div className="min-h-screen bg-gray-100">
         <nav className="bg-gray-800 text-white p-4">
           <div className="max-w-6xl mx-auto flex justify-between items-center">
-            <h1 className="text-xl font-bold">Bar Voucher System - Customer</h1>
+            <h1 className="text-xl font-bold">Bar Voucher System</h1>
+            <div className="space-x-2">
+              <button
+                onClick={() => setView('admin')}
+                className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+              >
+                Admin
+              </button>
+              <button
+                onClick={() => setView('scanner')}
+                className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+              >
+                Scanner
+              </button>
+            </div>
           </div>
         </nav>
         <div className="py-8">
