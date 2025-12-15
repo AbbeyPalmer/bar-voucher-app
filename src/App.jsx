@@ -87,6 +87,19 @@ const VoucherApp = () => {
       onLogin();
     };
     
+    const deleteInactiveVouchers = async () => {
+      if (!confirm('Delete all inactive vouchers? This cannot be undone.')) return;
+      
+      const inactiveVouchers = vouchers.filter(v => !v.active);
+      
+      for (const voucher of inactiveVouchers) {
+        await supabase.from('vouchers').delete().eq('id', voucher.id);
+      }
+      
+      await loadData();
+      alert('Deleted ' + inactiveVouchers.length + ' inactive vouchers');
+    };
+
     return (
       <div className="max-w-md mx-auto p-6 mt-20">
         <div className="bg-white rounded-lg shadow-md p-8">
@@ -252,16 +265,44 @@ const VoucherApp = () => {
         replacement_for: oldVoucher.id
       };
 
-      await supabase.from('vouchers').update({ 
-        active: false, 
-        replaced_by: newVoucher.id 
-      }).eq('id', oldVoucher.id);
+      // Deactivate old voucher
+      const { error: deactivateError } = await supabase
+        .from('vouchers')
+        .update({ 
+          active: false, 
+          replaced_by: newVoucher.id 
+        })
+        .eq('id', oldVoucher.id);
+
+      if (deactivateError) {
+        alert('Error deactivating old voucher: ' + deactivateError.message);
+        return;
+      }
       
-      await supabase.from('vouchers').insert([newVoucher]);
+      // Create new voucher
+      const { error: insertError } = await supabase
+        .from('vouchers')
+        .insert([newVoucher]);
+
+      if (insertError) {
+        alert('Error creating new voucher: ' + insertError.message);
+        return;
+      }
+
+      // Send email with new voucher
+      try {
+        await fetch('/api/send-vouchers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ vouchers: [newVoucher] })
+        });
+      } catch (e) {
+        console.log('Email not sent:', e);
+      }
       
       await loadData();
       searchVouchers();
-      alert('New voucher created! ID: ' + newVoucher.id);
+      alert('New voucher created and sent! ID: ' + newVoucher.id);
     };
 
     const resendVoucher = async (voucher) => {
@@ -331,7 +372,16 @@ const VoucherApp = () => {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Search & Manage Vouchers</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold">Search & Manage Vouchers</h2>
+            <button
+              onClick={deleteInactiveVouchers}
+              className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 text-sm flex items-center gap-2"
+            >
+              <Trash2 size={16} />
+              Delete Inactive
+            </button>
+          </div>
           <div className="flex gap-2 mb-4">
             <input
               type="email"
@@ -762,11 +812,57 @@ const VoucherApp = () => {
   };
 
   if (view === 'admin' && !isAdminAuth) {
-    return <LoginScreen onLogin={handleAdminLogin} title="Admin Login" />;
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-gray-800 text-white p-4">
+          <div className="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 className="text-xl font-bold">Bar Voucher System</h1>
+            <button
+              onClick={() => setView('customer')}
+              className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+            >
+              Customer View
+            </button>
+          </div>
+        </nav>
+        <LoginScreen onLogin={handleAdminLogin} title="Admin Login" />
+      </div>
+    );
   }
 
   if (view === 'scanner' && !isStaffAuth) {
-    return <LoginScreen onLogin={handleStaffLogin} title="Staff Login" />;
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-gray-800 text-white p-4">
+          <div className="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 className="text-xl font-bold">Bar Voucher System</h1>
+            <button
+              onClick={() => setView('customer')}
+              className="px-4 py-2 rounded bg-gray-700 hover:bg-gray-600"
+            >
+              Customer View
+            </button>
+          </div>
+        </nav>
+        <LoginScreen onLogin={handleStaffLogin} title="Staff Login" />
+      </div>
+    );
+  }
+
+  // If customer view is accessed directly (no auth needed)
+  if (view === 'customer') {
+    return (
+      <div className="min-h-screen bg-gray-100">
+        <nav className="bg-gray-800 text-white p-4">
+          <div className="max-w-6xl mx-auto flex justify-between items-center">
+            <h1 className="text-xl font-bold">Bar Voucher System - Customer</h1>
+          </div>
+        </nav>
+        <div className="py-8">
+          <CustomerView />
+        </div>
+      </div>
+    );
   }
 
   return (

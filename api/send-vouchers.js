@@ -1,9 +1,9 @@
 import { Resend } from 'resend';
+import QRCode from 'qrcode';
 
-const resend = new Resend('re_Ggx3r7kM_HdTwR59gnmujMpJkVFj3ybZp');
-    
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 export default async function handler(req, res) {
-  // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -23,8 +23,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const emailPromises = vouchers.map(voucher => {
+    const emailPromises = vouchers.map(async (voucher) => {
       const voucherUrl = `${process.env.APP_URL}?email=${encodeURIComponent(voucher.email)}`;
+      
+      const qrCodeDataUrl = await QRCode.toDataURL(voucher.id, {
+        width: 300,
+        margin: 2
+      });
       
       return resend.emails.send({
         from: 'onboarding@resend.dev',
@@ -35,30 +40,26 @@ export default async function handler(req, res) {
             <h1 style="color: #333;">Your Drink Vouchers</h1>
             <p>You've received <strong>${voucher.total_drinks} drink vouchers</strong> for ${voucher.event_name}!</p>
             
-            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h2 style="margin-top: 0;">Your Voucher ID:</h2>
-              <p style="font-family: monospace; font-size: 14px; background: white; padding: 10px; border-radius: 4px;">
-                ${voucher.id}
+            <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+              <h2 style="margin-top: 0;">Your QR Code:</h2>
+              <img src="${qrCodeDataUrl}" alt="Voucher QR Code" style="max-width: 300px; height: auto;" />
+              <p style="font-family: monospace; font-size: 12px; color: #666; margin-top: 10px;">
+                ID: ${voucher.id}
               </p>
             </div>
 
-            <p>To use your vouchers:</p>
+            <p><strong>To use your vouchers:</strong></p>
             <ol>
-              <li>Visit <a href="${voucherUrl}">your voucher page</a></li>
-              <li>Your email will be pre-filled</li>
-              <li>Show the QR code to the bartender</li>
+              <li>Show this QR code to the bartender</li>
+              <li>Or <a href="${voucherUrl}">click here</a> to view on your phone</li>
+              <li>Each scan redeems one drink</li>
             </ol>
-
-            <p style="color: #666; font-size: 14px; margin-top: 30px;">
-              You can also share these vouchers with friends!
-            </p>
           </div>
         `
       });
     });
 
     await Promise.all(emailPromises);
-
     return res.status(200).json({ success: true, sent: vouchers.length });
   } catch (error) {
     console.error('Error sending emails:', error);
