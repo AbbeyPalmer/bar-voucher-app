@@ -438,13 +438,22 @@ const LoginScreen = ({ onLogin, title }) => {
                       <Mail size={16} className="inline mr-1" />
                       Resend
                     </button>
-                    <button
+                 <button
                       onClick={() => createReplacementVoucher(voucher)}
                       className="flex-1 bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700 text-sm"
                     >
                       <RefreshCw size={16} className="inline mr-1" />
                       Replace
                     </button>
+                    {!voucher.active && (
+                      <button
+                        onClick={() => deleteVoucher(voucher.id)}
+                        className="flex-1 bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700 text-sm"
+                      >
+                        <Trash2 size={16} className="inline mr-1" />
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}

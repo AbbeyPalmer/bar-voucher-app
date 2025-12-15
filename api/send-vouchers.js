@@ -52,8 +52,9 @@ export default async function handler(req, res) {
             <p><strong>To use your vouchers:</strong></p>
             <ol>
               <li>Show this QR code to the bartender</li>
-              <li>Or visit: ${voucherUrl.replace('https://', '')} (copy and paste this link)</li>
-              <li>Each scan redeems one drink</li>
+              <li>Or copy this link and paste in your browser: <br/>
+                <code style="background: #f0f0f0; padding: 5px; display: block; margin-top: 5px;">${voucherUrl}</code>
+              </li>         
             </ol>
           </div>
         `
