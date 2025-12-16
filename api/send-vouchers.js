@@ -26,6 +26,7 @@ export default async function handler(req, res) {
     const emailPromises = vouchers.map(async (voucher) => {
       const voucherUrl = `${process.env.APP_URL}?email=${encodeURIComponent(voucher.email)}`;
       
+// Generate QR code as base64
       const qrCodeDataUrl = await QRCode.toDataURL(voucher.id, {
         width: 300,
         margin: 2
@@ -35,7 +36,6 @@ export default async function handler(req, res) {
         from: 'onboarding@resend.dev',
         to: voucher.email,
         subject: `Your ${voucher.event_name} Drink Vouchers`,
-        tags: [{ name: 'category', value: 'vouchers' }],
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h1 style="color: #333;">Your Drink Vouchers</h1>
@@ -43,8 +43,8 @@ export default async function handler(req, res) {
             
             <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
               <h2 style="margin-top: 0;">Your QR Code:</h2>
-              <img src="${qrCodeDataUrl}" alt="Voucher QR Code" style="max-width: 300px; height: auto;" />
-              <p style="font-family: monospace; font-size: 12px; color: #666; margin-top: 10px;">
+              <img src="${qrCodeDataUrl}" alt="Voucher QR Code" style="max-width: 300px; height: auto; display: block; margin: 0 auto;" />
+              <p style="font-family: monospace; font-size: 12px; color: #666; margin-top: 10px; word-break: break-all;">
                 ID: ${voucher.id}
               </p>
             </div>
@@ -52,10 +52,11 @@ export default async function handler(req, res) {
             <p><strong>To use your vouchers:</strong></p>
             <ol>
               <li>Show this QR code to the bartender</li>
-              <li>Or copy this link and paste in your browser: <br/>
-                <code style="background: #f0f0f0; padding: 5px; display: block; margin-top: 5px;">${voucherUrl}</code>
-              </li>         
+              <li>Or copy and paste this link in your browser:</li>
             </ol>
+            <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px;">
+              ${voucherUrl}
+            </div>
           </div>
         `
       });
