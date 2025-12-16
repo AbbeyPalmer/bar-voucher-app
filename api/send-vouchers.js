@@ -24,7 +24,8 @@ export default async function handler(req, res) {
 
   try {
     const emailPromises = vouchers.map(async (voucher) => {
-      const voucherUrl = `${process.env.APP_URL}`;
+      const baseUrl = process.env.PUBLIC_APP_URL || 'http://localhost:3000'; 
+      const voucherUrl = `${baseUrl}/?email=${encodeURIComponent(voucher.email)}`;
       
 // Generate QR code as base64
       const qrCodeDataUrl = await QRCode.toDataURL(voucher.id, {
