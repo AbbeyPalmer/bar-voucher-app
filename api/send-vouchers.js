@@ -24,7 +24,7 @@ export default async function handler(req, res) {
 
   try {
     const emailPromises = vouchers.map(async (voucher) => {
-      const voucherUrl = `${process.env.APP_URL}?email=${encodeURIComponent(voucher.email)}`;
+      const voucherUrl = `${process.env.APP_URL}`;
       
 // Generate QR code as base64
       const qrCodeDataUrl = await QRCode.toDataURL(voucher.id, {
@@ -51,8 +51,9 @@ export default async function handler(req, res) {
 
             <p><strong>To use your vouchers:</strong></p>
             <ol>
-              <li>Show this QR code to the bartender</li>
-              <li>Or copy and paste this link in your browser:</li>
+              <li>Visit: ${voucherUrl}</li>
+              <li>Enter your email: <strong>${voucher.email}</strong></li>
+              <li>Show the QR code to the bartender</li>
             </ol>
             <div style="background: #f0f0f0; padding: 10px; border-radius: 4px; word-break: break-all; font-family: monospace; font-size: 12px;">
               ${voucherUrl}
